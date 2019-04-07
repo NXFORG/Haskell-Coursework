@@ -4,10 +4,12 @@
 --
 --
 -- Types
-
+import Text.PrettyPrint
+import Data.List
+import Prelude hiding ((<>))
 --
 -- Define Album type here
-data Album = Album {title,artist :: String, year,sales :: Int}
+data Album = Album {title,artist :: String, year,sales :: Int} deriving Show
 
 
 testData :: [Album]
@@ -32,23 +34,28 @@ testData = [(Album "Greatest Hits" "Queen" 1981 6300000), (Album "Gold: Greatest
 --
 --
 --  Your functional code goes here
+
+decrement :: Int -> Int
+decrement 0 = 0
+decrement n = n -1
+
+
+
 albumsToString :: [Album] -> String
+albumsToString [] = []
+albumsToString (x:xs) = title x ++ " " ++ artist x ++ " " ++ show (year x) ++ " " ++ show (sales x) ++ "\n" ++ albumsToString xs
+
+top10 :: [Album] -> [Album]
+top10 (x:xs) = take 10 (x:xs)
 
 
-
-
-
-
-
---
---
 
 -- Demo function to test basic functionality (without persistence - i.e.
 -- testData doesn't change and nothing is saved/loaded to/from albums file).
 
---demo :: Int -> IO ()
---demo 1  = putStrLn (albumsToString testData)
---demo 2  = putStrLn (albumsToString (top10 testData))
+demo :: Int -> IO ()
+demo 1  = putStrLn (albumsToString testData)
+demo 2  = putStrLn (albumsToString (top10 testData))
 --demo 3  = putStrLn ( all albums released between 2000 and 2008 inclusive )
 --demo 4  = putStrLn ( all albums with titles beginning with "Th" )
 --demo 5  = putStrLn ( total sales figure for "Queen" )
