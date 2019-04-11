@@ -4,9 +4,10 @@
 --
 --
 -- Types
-import Text.PrettyPrint
+
 import Data.List
-import Prelude hiding ((<>))
+import Data.Ord (comparing)
+
 --
 -- Define Album type here
 data Album = Album {title,artist :: String, year,sales :: Int} deriving Show
@@ -29,7 +30,7 @@ testData = [(Album "Greatest Hits" "Queen" 1981 6300000), (Album "Gold: Greatest
             (Album "Jagged Little Pill"  "Alanis Morissette"  1995  2780000),  (Album "Tubular Bells"  "Mike Oldfield"  1973  2760000),  (Album "Scissor Sisters"  "Scissor Sisters"  2004  2760000),
             (Album "...But Seriously"  "Phil Collins"  1989  2750000),  (Album "Tracy Chapman"  "Tracy Chapman"  1988  2710000),  (Album "Parachutes"  "Coldplay"  2000  2710000),
             (Album "The Man Who"  "Travis"  1999  2687500),  (Album "Greatest Hits"  "ABBA"  1975  2606000),  (Album "I've Been Expecting You"  "Robbie Williams"  1998  2586500),
-            (Album "Come Away with Me"  "Norah Jones"  2002  2556650),  (Album "Graceland"  "Paul Simon"  1986  2500000),  (Album "Ladies & Gentlemen: The Best of"  "George Michael"  1998  2500000)]
+            (Album "Come Away with Me"  "Norah Jones"  2002  2556650),  (Album "Graceland"  "Paul Simon"  1986  2500000),  (Album "Ladies & Gentlemen: The Best of"  "George Michael"  1998  2500000),(Album "Yes" "Queen" 1987 7600000)]
 
 --
 --
@@ -47,7 +48,10 @@ albumsToString (x:xs) = title x ++ " " ++ artist x ++ " " ++ show (year x) ++ " 
 
 
 top10 :: [Album] -> [Album]
-top10 (x:xs) = take 10 (x:xs)
+top10 = sortBy $ flip $ comparing sales
+
+--top10 :: [Album] -> [Album]
+--top10 (x:xs) = take 10 (x:xs)
 
 getBetween :: [Album] -> [Album]
 getBetween (x:xs)
@@ -60,10 +64,13 @@ getPrefix (x:xs)
       | isPrefixOf "Th" (title x) == False = getPrefix xs
       | isPrefixOf "Th" (title x) == True = [x] ++ getPrefix xs
 
---getSales :: [Album] -> String
---getSales (x:xs)
-    --  | artist x /= "Queen" = getSales xs
-    --  | artist x == "Queen" = sales x + getSales xs
+getSales :: [Album] -> Int
+getSales (x:xs)
+      | artist x == "Queen" = totalSales + getSales xs
+      | artist x /= "Queen" = getSales xs
+      where totalSales = totalSales + sales x
+
+
 
 -- Demo function to test basic functionality (without persistence - i.e.
 -- testData doesn't change and nothing is saved/loaded to/from albums file).
