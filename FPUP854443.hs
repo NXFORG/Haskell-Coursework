@@ -4,8 +4,8 @@
 --
 --
 -- Types
-
 import Data.List
+import Data.List (sortBy)
 import Data.Ord (comparing)
 
 --
@@ -48,10 +48,7 @@ albumsToString (x:xs) = title x ++ " " ++ artist x ++ " " ++ show (year x) ++ " 
 
 
 top10 :: [Album] -> [Album]
-top10 = sortBy $ flip $ comparing sales
-
---top10 :: [Album] -> [Album]
---top10 (x:xs) = take 10 (x:xs)
+top10 albumList = take 10 $ sortBy (flip $ comparing sales) albumList
 
 getBetween :: [Album] -> [Album]
 getBetween (x:xs)
