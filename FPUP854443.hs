@@ -36,16 +36,12 @@ testData = [(Album "Greatest Hits" "Queen" 1981 6300000), (Album "Gold: Greatest
 --
 --  Your functional code goes here
 
-decrement :: Int -> Int
-decrement 0 = 0
-decrement n = n -1
-
-
+addAlbum :: String -> String -> Int -> Int -> [Album] -> [Album]
+addAlbum title artist year sales db = (Album title artist year sales) : db
 
 albumsToString :: [Album] -> String
-albumsToString [] = []
-albumsToString (x:xs) = title x ++ " " ++ artist x ++ " " ++ show (year x) ++ " " ++ show (sales x) ++ "\n" ++ albumsToString xs
-
+albumsToString [] = ""
+albumsToString ((Album title artist year sales):xs) = artist ++ " - " ++ title ++ " (" ++  (show year) ++ ") Sales: " ++ (show sales) ++ "\n\n" ++ albumsToString xs
 
 top10 :: [Album] -> [Album]
 top10 albumList = take 10 $ sortBy (flip $ comparing sales) albumList
@@ -61,13 +57,19 @@ getPrefix (x:xs)
       | isPrefixOf "Th" (title x) == False = getPrefix xs
       | isPrefixOf "Th" (title x) == True = [x] ++ getPrefix xs
 
-getSales :: [Album] -> Int
-getSales (x:xs)
-      | artist x == "Queen" = totalSales + getSales xs
-      | artist x /= "Queen" = getSales xs
-      where totalSales = totalSales + sales x
+--getSales :: [Album] -> Int
+--getSales (x:xs)
+  --    | artist x == "Queen" = totalSales + getSales xs
+  --    | artist x /= "Queen" = getSales xs
+  --    where totalSales = totalSales + sales x
 
 
+getSales :: String -> [Album] -> [Album]
+getSales artName testData = filter(\(Album _ artist _ _) -> artist == artName) testData
+
+
+--getAppearances :: [Album] -> Int
+--getAppearances (x:xs)
 
 -- Demo function to test basic functionality (without persistence - i.e.
 -- testData doesn't change and nothing is saved/loaded to/from albums file).
@@ -77,7 +79,7 @@ demo 1  = putStrLn (albumsToString testData)
 demo 2  = putStrLn (albumsToString (top10 testData))
 demo 3  = putStrLn (albumsToString (getBetween testData))
 demo 4  = putStrLn (albumsToString (getPrefix testData))
---demo 5  = putStrLn ( total sales figure for "Queen" )
+demo 5  = putStrLn (albumsToString(getSales "Queen" testData))
 --demo 6  = putStrLn ( all artists with the number of times they appear in top 50 )
 --demo 7  = putStrLn ( albums after removing 50th album and adding "Progress"
 --                     by "Take That" from 2010 with 2700000 sales )
