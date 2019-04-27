@@ -3,15 +3,19 @@
 -- 854443
 --
 --
--- Types
+
+import Data.Char
 import Data.List
 import Data.List (sortBy)
 import Data.Ord (comparing)
 
+-- Types
+
 --
 -- Define Album type here
-data Album = Album {title,artist :: String, year,sales :: Int} deriving Show
+data Album = Album{title, artist :: String, year, sales :: Int } deriving (Show, Read)
 
+-- testData containing a list of the 50 albumToString
 
 testData :: [Album]
 testData = [(Album "Greatest Hits" "Queen" 1981 6300000), (Album "Gold: Greatest Hits" "ABBA" 1992 5400000),
@@ -36,40 +40,90 @@ testData = [(Album "Greatest Hits" "Queen" 1981 6300000), (Album "Gold: Greatest
 --
 --  Your functional code goes here
 
-addAlbum :: String -> String -> Int -> Int -> [Album] -> [Album]
-addAlbum title artist year sales db = (Album title artist year sales) : db
+-- Converts a list of albums to a string
 
 albumsToString :: [Album] -> String
-albumsToString [] = ""
-albumsToString ((Album title artist year sales):xs) = artist ++ " - " ++ title ++ " (" ++  (show year) ++ ") Sales: " ++ (show sales) ++ "\n\n" ++ albumsToString xs
+albumsToString  [] = " "
+albumsToString  (x:xs) = stringAlbum x ++ "\n" ++ albumsToString xs
+
+-- Formats each category into a column of specified width
+
+stringAlbum :: Album -> String
+stringAlbum (Album {title = t, artist = a, year = y, sales= s}) =
+   columnify 41 t ++ columnify 21 a ++ columnify 6 (show y) ++ columnify 9 (show s)
+
+-- Gets the length value of the longest piece of data in each field and fills the gap
+-- between shorter values and the max length with spaces
+
+columnify :: Int -> String -> String
+columnify maxLength value = value ++ (take (maxLength - (length value)) (repeat ' '))
+
+-- Gets the top 10 highest selling albums, sorted in descending order
 
 top10 :: [Album] -> [Album]
 top10 albumList = take 10 $ sortBy (flip $ comparing sales) albumList
 
-getBetween :: [Album] -> [Album]
-getBetween (x:xs)
-      | year x < 2000 || year x > 2008 = getBetween xs
-      | year x >= 2000 && year x <= 2008 = [x] ++ getBetween xs
+-- Gets all albums released between and including two user-specified dates
 
+getBetween :: Int -> Int -> [Album] -> [Album]
+getBetween a b [] = []
+getBetween a b (x:xs)
+      | year x < a || year x > b = getBetween a b xs
+      | year x >= a && year x <= b = [x] ++ getBetween a b xs
 
-getPrefix :: [Album] -> [Album]
-getPrefix (x:xs)
-      | isPrefixOf "Th" (title x) == False = getPrefix xs
-      | isPrefixOf "Th" (title x) == True = [x] ++ getPrefix xs
+-- Gets all albums starting with a given prefix
 
---getSales :: [Album] -> Int
---getSales (x:xs)
-  --    | artist x == "Queen" = totalSales + getSales xs
-  --    | artist x /= "Queen" = getSales xs
-  --    where totalSales = totalSales + sales x
+getPrefix :: String -> [Album] -> [Album]
+getPrefix a [] = []
+getPrefix pref (x:xs)
+      | isPrefixOf pref (title x) == False = getPrefix pref xs
+      | isPrefixOf pref (title x) == True = [x] ++ getPrefix pref xs
 
+-- Gets the total amount of sales from a given artist
 
-getSales :: String -> [Album] -> [Album]
-getSales artName testData = filter(\(Album _ artist _ _) -> artist == artName) testData
+getSales :: String -> [Album] -> Int
+getSales artist albums = sum [ sales | Album _ a _ sales <- albums, a == artist ]
 
+-- Gets a list of albums and displays a list of artists and the number of their albums in the top 50
 
---getAppearances :: [Album] -> Int
---getAppearances (x:xs)
+albumNo :: [Album] -> String
+albumNo [] = " "
+albumNo (Album _ aut _ _:xs) = columnify 20 aut ++ columnify 2 (albumTotal aut testData) ++
+  " \n" ++ (albumNo (filter(\(Album _ a _ _) -> aut /= a) xs))
+
+-- Gets the total number of albums in the top 50 for each artist
+
+albumTotal :: String -> [Album] -> String
+albumTotal artist db = show $ sum  [ 1 | Album _ a _ _ <- db, a == artist ]
+
+-- Adds and album to a list of albums
+
+addAlbum :: String -> String -> Int -> Int -> [Album] -> [Album]
+addAlbum title artist year sales db = (Album title artist year sales) : db
+
+-- Removes the last album from the List
+
+removeLast :: [Album] -> [Album]
+removeLast xs = tail (init xs)
+
+removeElementAlbum:: [Album] -> ([Album] -> [Album]) -> [Album]
+removeElementAlbum x func = func x
+
+--
+
+addSales :: String -> String  -> [Album] -> [Album]
+addSales ttl art [] = []
+addSales ttl art (x:xs)
+    | title x == ttl = drop (getIndex ttl (x:xs)) xs
+    | otherwise = addSales ttl art xs
+
+-- Gets the index in the list of an album
+
+getIndex:: String -> [Album]-> Int
+getIndex _  [] = (-1)
+getIndex ttl (Album title _ _ _:xs)
+    | ttl == title = 0
+    | otherwise = 1+ getIndex ttl xs
 
 -- Demo function to test basic functionality (without persistence - i.e.
 -- testData doesn't change and nothing is saved/loaded to/from albums file).
@@ -77,16 +131,35 @@ getSales artName testData = filter(\(Album _ artist _ _) -> artist == artName) t
 demo :: Int -> IO ()
 demo 1  = putStrLn (albumsToString testData)
 demo 2  = putStrLn (albumsToString (top10 testData))
-demo 3  = putStrLn (albumsToString (getBetween testData))
-demo 4  = putStrLn (albumsToString (getPrefix testData))
-demo 5  = putStrLn (albumsToString(getSales "Queen" testData))
---demo 6  = putStrLn ( all artists with the number of times they appear in top 50 )
---demo 7  = putStrLn ( albums after removing 50th album and adding "Progress"
---                     by "Take That" from 2010 with 2700000 sales )
---demo 8  = putStrLn ( albums after increasing sales of "21" by "Adele" by 400000 )
+demo 3  = putStrLn (albumsToString (getBetween 2000 2008 testData))
+demo 4  = putStrLn (albumsToString (getPrefix "Th" testData))
+demo 5  = putStrLn (show (getSales "Queen" testData))
+demo 6  = putStrLn (albumNo testData)
+demo 7  = putStrLn (albumsToString (addAlbum "Progress" "Take That" 2010 2700000 $ removeLast testData))
+demo 8  = putStrLn (albumsToString (addSales "21" "Adele" testData))
 
 --
 --
 -- Your user interface (and loading/saving) code goes here
 --
+
+main :: IO ()
+main = do
+  db <- getFile
+  putStrLn (albumsToString db)
+
+getFile :: IO [Album]
+getFile = do
+    file <- readFile "albums.txt"
+    length file `seq` return (read file :: [Album])
+
+
+
+
+
+exitFile :: [Album] -> IO ()
+exitFile albums = do writeFile "albums.txt" (show albums)
+
+
+
 --
