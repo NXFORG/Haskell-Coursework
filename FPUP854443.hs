@@ -34,7 +34,7 @@ testData = [(Album "Greatest Hits" "Queen" 1981 6300000), (Album "Gold: Greatest
             (Album "Jagged Little Pill"  "Alanis Morissette"  1995  2780000),  (Album "Tubular Bells"  "Mike Oldfield"  1973  2760000),  (Album "Scissor Sisters"  "Scissor Sisters"  2004  2760000),
             (Album "...But Seriously"  "Phil Collins"  1989  2750000),  (Album "Tracy Chapman"  "Tracy Chapman"  1988  2710000),  (Album "Parachutes"  "Coldplay"  2000  2710000),
             (Album "The Man Who"  "Travis"  1999  2687500),  (Album "Greatest Hits"  "ABBA"  1975  2606000),  (Album "I've Been Expecting You"  "Robbie Williams"  1998  2586500),
-            (Album "Come Away with Me"  "Norah Jones"  2002  2556650),  (Album "Graceland"  "Paul Simon"  1986  2500000),  (Album "Ladies & Gentlemen: The Best of"  "George Michael"  1998  2500000),(Album "Yes" "Queen" 1987 7600000)]
+            (Album "Come Away with Me"  "Norah Jones"  2002  2556650),  (Album "Graceland"  "Paul Simon"  1986  2500000),  (Album "Ladies & Gentlemen: The Best of"  "George Michael"  1998  2500000)]
 
 --
 --
@@ -86,10 +86,10 @@ getSales artist albums = sum [ sales | Album _ a _ sales <- albums, a == artist 
 
 -- Gets a list of albums and displays a list of artists and the number of their albums in the top 50
 
-albumNo :: [Album] -> String
-albumNo [] = " "
-albumNo (Album _ aut _ _:xs) = columnify 20 aut ++ columnify 2 (albumTotal aut testData) ++
-  " \n" ++ (albumNo (filter(\(Album _ a _ _) -> aut /= a) xs))
+albumNumber :: [Album] -> String
+albumNumber [] = " "
+albumNumber (Album _ art _ _:xs) = columnify 20 art ++ columnify 2 (albumTotal art testData) ++
+  " \n" ++ (albumNumber (filter(\(Album _ a _ _) -> art /= a) xs))
 
 -- Gets the total number of albums in the top 50 for each artist
 
@@ -106,16 +106,13 @@ addAlbum title artist year sales db = (Album title artist year sales) : db
 removeLast :: [Album] -> [Album]
 removeLast xs = tail (init xs)
 
-removeElementAlbum:: [Album] -> ([Album] -> [Album]) -> [Album]
-removeElementAlbum x func = func x
-
 --
 
-addSales :: String -> String  -> [Album] -> [Album]
-addSales ttl art [] = []
-addSales ttl art (x:xs)
+addSales :: String -> Int -> [Album] -> [Album]
+addSales ttl sal [] = []
+addSales ttl sal (x:xs)
     | title x == ttl = drop (getIndex ttl (x:xs)) xs
-    | otherwise = addSales ttl art xs
+    | otherwise = addSales ttl sal xs
 
 -- Gets the index in the list of an album
 
@@ -134,9 +131,9 @@ demo 2  = putStrLn (albumsToString (top10 testData))
 demo 3  = putStrLn (albumsToString (getBetween 2000 2008 testData))
 demo 4  = putStrLn (albumsToString (getPrefix "Th" testData))
 demo 5  = putStrLn (show (getSales "Queen" testData))
-demo 6  = putStrLn (albumNo testData)
+demo 6  = putStrLn (albumNumber testData)
 demo 7  = putStrLn (albumsToString (addAlbum "Progress" "Take That" 2010 2700000 $ removeLast testData))
-demo 8  = putStrLn (albumsToString (addSales "21" "Adele" testData))
+demo 8  = putStrLn (albumsToString (addSales "21" 400000 testData))
 
 --
 --
@@ -146,20 +143,97 @@ demo 8  = putStrLn (albumsToString (addSales "21" "Adele" testData))
 main :: IO ()
 main = do
   db <- getFile
+  putStrLn "Main menu\n"
+  putStrLn "============================================================================"
   putStrLn (albumsToString db)
+  menu db
 
 getFile :: IO [Album]
 getFile = do
     file <- readFile "albums.txt"
     length file `seq` return (read file :: [Album])
 
-
-
-
-
 exitFile :: [Album] -> IO ()
 exitFile albums = do writeFile "albums.txt" (show albums)
 
+menu :: [Album] -> IO ()
+menu db = do
+    putStrLn "============================================================================"
+    putStrLn "\nType one of the following numbers to select an option:\n"
+    putStrLn "1: Display the list of albums"
+    putStrLn "2: Display the top 10 best-selling albums"
+    putStrLn "3: Display albums released between 2 given years"
+    putStrLn "4: Display albums with a title contating a given prefix"
+    putStrLn "5: Display the total sales for a given artist"
+    putStrLn "6: Display the list of artists and the number of their albums in the top 50"
+    putStrLn "7: Remove the lowest album and add a new given album"
+    putStrLn "8: Increase the sales figure for a given album"
+    putStrLn "9: Exit\n"
+    putStrLn "============================================================================"
+    option <- getLine
+    case option of
+        "1" -> do putStrLn (albumsToString db) ; menu db
+        "2" -> do putStrLn (albumsToString (top10 db)) ; menu db
+        "3" -> betweenDates db
+        "4" -> choosePrefix db
+        "5" -> getArtistSales db
+        "6" -> do putStrLn (albumNumber db) ; menu db
+        "7" -> addNew db
+        "8" -> updateSales db
+        "9" -> do
+                exitFile db
+                return ()
+        _ -> do putStrLn "\nEnter a number"
+                menu db
 
+betweenDates :: [Album] ->  IO ()
+betweenDates db = do
+    putStrLn "Enter the first year:"
+    year1 <- toInt
+    putStrLn "Enter the second year:"
+    year2 <- toInt
+    putStrLn (albumsToString (getBetween year1 year2 db))
+    menu db
 
---
+choosePrefix :: [Album] -> IO ()
+choosePrefix db = do
+    putStrLn "Enter the prefix:"
+    pref <- getLine
+    putStrLn (albumsToString (getPrefix pref db))
+    menu db
+
+getArtistSales :: [Album] -> IO ()
+getArtistSales db = do
+    putStrLn "Enter the artist's name:"
+    art <- getLine
+    putStrLn (show (getSales art db))
+    menu db
+
+addNew :: [Album] -> IO ()
+addNew db = do
+    putStrLn "Enter album title:"
+    ttl <- getLine
+    putStrLn "Enter album artist:"
+    art <- getLine
+    putStrLn "Enter album year:"
+    year <- toInt
+    putStrLn "Enter album sales:"
+    sal <- toInt
+    let updateAlbums = (addAlbum ttl art year sal $ removeLast db)
+    putStrLn (albumsToString updateAlbums)
+    menu updateAlbums
+
+updateSales :: [Album] -> IO ()
+updateSales db = do
+   putStrLn "Enter album title:"
+   ttl <- getLine
+   putStrLn "Enter new album sales amount:"
+   sal <- toInt
+   let updateAlbums = (addSales ttl sal db)
+   putStrLn (albumsToString updateAlbums)
+   menu updateAlbums
+
+toInt :: IO Int
+toInt = do
+   n <- getLine
+   return (read n :: Int)
