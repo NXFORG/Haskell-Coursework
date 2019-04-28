@@ -106,17 +106,16 @@ addAlbum title artist year sales db = (Album title artist year sales) : db
 removeLast :: [Album] -> [Album]
 removeLast xs = tail (init xs)
 
---
+-- Gets the index of an album and removes it
 
-addSales :: String -> Int -> [Album] -> [Album]
-addSales ttl sal [] = []
-addSales ttl sal (x:xs)
-    | title x == ttl = drop (getIndex ttl (x:xs)) xs
-    | otherwise = addSales ttl sal xs
+removeAlbum :: String -> [Album] -> [Album]
+removeAlbum n db = do
+   let x = getIndex n db
+   take x db ++ drop (x+1) db
 
 -- Gets the index in the list of an album
 
-getIndex:: String -> [Album]-> Int
+getIndex :: String -> [Album]-> Int
 getIndex _  [] = (-1)
 getIndex ttl (Album title _ _ _:xs)
     | ttl == title = 0
@@ -133,28 +132,39 @@ demo 4  = putStrLn (albumsToString (getPrefix "Th" testData))
 demo 5  = putStrLn (show (getSales "Queen" testData))
 demo 6  = putStrLn (albumNumber testData)
 demo 7  = putStrLn (albumsToString (addAlbum "Progress" "Take That" 2010 2700000 $ removeLast testData))
-demo 8  = putStrLn (albumsToString (addSales "21" 400000 testData))
+demo 8  = do
+  putStrLn (albumsToString(removeAlbum "21" testData))
+  putStrLn (albumsToString (addAlbum "21" "Adele" 2011 5510000 testData))
 
 --
 --
 -- Your user interface (and loading/saving) code goes here
 --
 
+-- Loads the user interface
+
 main :: IO ()
 main = do
   db <- getFile
-  putStrLn "Main menu\n"
+  putStrLn "============================================================================"
+  putStrLn "=                             Main menu                                    ="
   putStrLn "============================================================================"
   putStrLn (albumsToString db)
   menu db
+
+-- Reads the album data file
 
 getFile :: IO [Album]
 getFile = do
     file <- readFile "albums.txt"
     length file `seq` return (read file :: [Album])
 
+-- Writes the changes to the album data file
+
 exitFile :: [Album] -> IO ()
 exitFile albums = do writeFile "albums.txt" (show albums)
+
+-- Main menu, prompts the user to select an option and then calls a function based on their response
 
 menu :: [Album] -> IO ()
 menu db = do
@@ -182,9 +192,10 @@ menu db = do
         "8" -> updateSales db
         "9" -> do
                 exitFile db
-                return ()
         _ -> do putStrLn "\nEnter a number"
                 menu db
+
+-- The user enters 2 dates and a function displaying all albums released on and between those dates is called
 
 betweenDates :: [Album] ->  IO ()
 betweenDates db = do
@@ -195,6 +206,8 @@ betweenDates db = do
     putStrLn (albumsToString (getBetween year1 year2 db))
     menu db
 
+-- The user enters a prefix and a function displaying all albums containing that prefix is called
+
 choosePrefix :: [Album] -> IO ()
 choosePrefix db = do
     putStrLn "Enter the prefix:"
@@ -202,12 +215,16 @@ choosePrefix db = do
     putStrLn (albumsToString (getPrefix pref db))
     menu db
 
+-- The user enters an artist's name and a function displaying the total sales of albums by that artist is called
+
 getArtistSales :: [Album] -> IO ()
 getArtistSales db = do
     putStrLn "Enter the artist's name:"
     art <- getLine
     putStrLn (show (getSales art db))
     menu db
+
+-- Removes the lowest selling album from the list and adds a new album specified by the user
 
 addNew :: [Album] -> IO ()
 addNew db = do
@@ -223,15 +240,24 @@ addNew db = do
     putStrLn (albumsToString updateAlbums)
     menu updateAlbums
 
+-- The user enters a title, artist, release year and sales figure then a function removing the existing entry of that album and adding the new entry is called
+
 updateSales :: [Album] -> IO ()
 updateSales db = do
-   putStrLn "Enter album title:"
+   putStrLn "Enter new album title:"
    ttl <- getLine
+   putStrLn "Enter new album artist:"
+   art <- getLine
+   putStrLn "Enter new album release year:"
+   year <- toInt
    putStrLn "Enter new album sales amount:"
    sal <- toInt
-   let updateAlbums = (addSales ttl sal db)
+   let removedAlbum = (removeAlbum ttl db)
+   let updateAlbums = (addAlbum ttl art year sal removedAlbum)
    putStrLn (albumsToString updateAlbums)
    menu updateAlbums
+
+-- Reads the user's input as an integer
 
 toInt :: IO Int
 toInt = do
