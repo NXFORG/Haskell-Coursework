@@ -108,18 +108,26 @@ removeLast xs = tail (init xs)
 
 -- Gets the index of an album and removes it
 
-removeAlbum :: String -> [Album] -> [Album]
+removeAlbum :: Int -> [Album] -> [Album]
 removeAlbum n db = do
    let x = getIndex n db
    take x db ++ drop (x+1) db
 
+insertList :: Album -> [Album] -> [Album]
+insertList a db = (insertAt(getIndex(getSales(title a) db) db) a db)
+
+-- Inserts album into a given index
+
+insertAt :: Int -> Album -> [Album] -> [Album]
+insertAt pos alb db = h1++[alb]++h2
+   where (h1,h2) = (splitAt pos db)
 -- Gets the index in the list of an album
 
-getIndex :: String -> [Album]-> Int
+getIndex :: Int -> [Album]-> Int
 getIndex _  [] = (-1)
-getIndex ttl (Album title _ _ _:xs)
-    | ttl == title = 0
-    | otherwise = 1+ getIndex ttl xs
+getIndex sal (Album _ _ _ sales:xs)
+    | sal == sales = 0
+    | otherwise = 1+ getIndex sal xs
 
 -- Demo function to test basic functionality (without persistence - i.e.
 -- testData doesn't change and nothing is saved/loaded to/from albums file).
@@ -131,10 +139,9 @@ demo 3  = putStrLn (albumsToString (getBetween 2000 2008 testData))
 demo 4  = putStrLn (albumsToString (getPrefix "Th" testData))
 demo 5  = putStrLn (show (getSales "Queen" testData))
 demo 6  = putStrLn (albumNumber testData)
-demo 7  = putStrLn (albumsToString (addAlbum "Progress" "Take That" 2010 2700000 $ removeLast testData))
-demo 8  = do
-  putStrLn (albumsToString(removeAlbum "21" testData))
-  putStrLn (albumsToString (addAlbum "21" "Adele" 2011 5510000 testData))
+demo 7  = putStrLn (albumsToString (insertList (Album "Progress" "Take That" 2010 2700000) (init testData)))
+demo 8  = putStrLn (albumsToString (insertList (Album "21" "Adele" 2011 5510000) testData))
+
 
 --
 --
@@ -236,7 +243,7 @@ addNew db = do
     year <- toInt
     putStrLn "Enter album sales:"
     sal <- toInt
-    let updateAlbums = (addAlbum ttl art year sal $ removeLast db)
+    let updateAlbums = (insertList (Album ttl art year sal) $ (init db))
     putStrLn (albumsToString updateAlbums)
     menu updateAlbums
 
@@ -252,8 +259,8 @@ updateSales db = do
    year <- toInt
    putStrLn "Enter new album sales amount:"
    sal <- toInt
-   let removedAlbum = (removeAlbum ttl db)
-   let updateAlbums = (addAlbum ttl art year sal removedAlbum)
+   let removedAlbum = (removeAlbum sal db)
+   let updateAlbums = (insertList (Album ttl art year sal) removedAlbum)
    putStrLn (albumsToString updateAlbums)
    menu updateAlbums
 
